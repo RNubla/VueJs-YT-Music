@@ -1,118 +1,98 @@
 <template>
   <div class="hello">
     <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br />
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener"
-        >vue-cli documentation</a
-      >.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li>
-        <a
-          href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel"
-          target="_blank"
-          rel="noopener"
-          >babel</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-pwa"
-          target="_blank"
-          rel="noopener"
-          >pwa</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router"
-          target="_blank"
-          rel="noopener"
-          >router</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex"
-          target="_blank"
-          rel="noopener"
-          >vuex</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint"
-          target="_blank"
-          rel="noopener"
-          >eslint</a
-        >
-      </li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li>
-        <a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a>
-      </li>
-      <li>
-        <a href="https://forum.vuejs.org" target="_blank" rel="noopener"
-          >Forum</a
-        >
-      </li>
-      <li>
-        <a href="https://chat.vuejs.org" target="_blank" rel="noopener"
-          >Community Chat</a
-        >
-      </li>
-      <li>
-        <a href="https://twitter.com/vuejs" target="_blank" rel="noopener"
-          >Twitter</a
-        >
-      </li>
-      <li>
-        <a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a>
-      </li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li>
-        <a href="https://router.vuejs.org" target="_blank" rel="noopener"
-          >vue-router</a
-        >
-      </li>
-      <li>
-        <a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a>
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/vue-devtools#vue-devtools"
-          target="_blank"
-          rel="noopener"
-          >vue-devtools</a
-        >
-      </li>
-      <li>
-        <a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener"
-          >vue-loader</a
-        >
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/awesome-vue"
-          target="_blank"
-          rel="noopener"
-          >awesome-vue</a
-        >
-      </li>
-    </ul>
+    <form action="" method="post" @submit.prevent="AddToList">
+      <p>
+        <input type="text" v-model="yturl" />
+        <button type="submit">Submit</button>
+      </p>
+    </form>
+    <Aplayer
+      slot="display"
+      :key="songs"
+      autoplay
+      :list="songs"
+      :music="songs[0]"
+      ref="player"
+    />
   </div>
 </template>
 
 <script>
+const axios = require("axios");
+const API_URL = "http://localhost:5000";
+
+import Aplayer from "vue-aplayer";
 export default {
   name: "HelloWorld",
+  data() {
+    return {
+      yturl: null,
+      ytid: "",
+      songs: [
+        {
+          artist: "",
+          pic: "",
+          src: "",
+          title: ""
+        }
+      ]
+    };
+  },
+  async mounted() {
+    try {
+      const res = await axios.get(`${API_URL}/songs`);
+      this.songs = res.data;
+      console.log(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+    /* axios
+      .get(`${API_URL}/songs`)
+      .then(res => {
+        this.songs = res.data;
+        console.log(res.data);
+      })
+      .catch(error => console.log(error)); */
+  },
+
+  components: {
+    Aplayer
+  },
+  watch: {
+    yturl() {
+      this.yturl = this.yturl
+        .replace(/(>|<)/gi, "")
+        .split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
+      if (this.yturl[2] !== undefined) {
+        this.ytid = this.yturl[2].split(/[^0-9a-z_-]/i);
+        this.ytid = this.ytid[0];
+      } else {
+        this.ytid = this.yturl;
+      }
+      return this.ytid;
+    }
+  },
+  methods: {
+    async getList() {
+      axios
+        .get(`${API_URL}/songs`)
+        .then(res => {
+          this.songs = res.data;
+        })
+        .catch(error => console.log(error));
+    },
+    async AddToList() {
+      axios
+        .post(`${API_URL}/${this.ytid}`, this.ytid)
+        .then(res => {
+          res = this.ytid;
+          this.getList();
+          console.log(res);
+        })
+        .catch(error => console.log(error));
+    }
+  },
   props: {
     msg: String
   }
